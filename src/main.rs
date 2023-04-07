@@ -19,15 +19,20 @@ fn read_csv_files() -> Result<(), Box<dyn Error>>  {
 
     //iter files
     for file in files {
-        let mut rdr = ReaderBuilder::new()
+        let mut reader= ReaderBuilder::new()
             .has_headers(true)
             .from_path(file)?;
-        println!("reader => {:?}", rdr);
+        println!("reader => {:?}", reader);
 
-        for result in rdr.records() {
+        for result in reader.records() {
             let record = result?;
             println!("record => {:?}", record);
+            let value1: &str = record.get(0).unwrap_or("");
+            let value2: &str = record.get(1).unwrap_or("");
+            println!("Value at index 0 in the StringRecord: {}", value1);
+            println!("Value at index 1 in the StringRecord: {}", value2);
         }
+
     }
     Ok(())
 }
