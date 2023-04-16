@@ -200,6 +200,63 @@ fn delete_duplicated_rows_by_column() -> PolarsResult<DataFrame>  {
     Ok(df)
 }
 
+
+fn create_df() -> Result<DataFrame, PolarsError>  {
+    let df: DataFrame = df!(
+        "name" => &["jj", "ww"],
+        "surname" => &["sjj", "sww"]
+    ).unwrap();
+    println!("create df {:?}", df);
+    Ok(df)
+}
+
+fn add_column() -> Result<DataFrame, PolarsError>  {
+    let df: DataFrame = df!(
+        "name" => &["jj", "ww"],
+        "surname" => &["sjj", "sww"]
+    ).unwrap();
+    println!("add column {:?}", df);
+    let df1: DataFrame = df.with_row_count("address", Some(10)).unwrap();
+    println!("add column {:?}", df1);
+    Ok(df1)
+}
+
+fn select_column() -> Result<DataFrame, PolarsError>  {
+    let df: DataFrame = df!(
+        "name" => &["rew", "ww", "erwe"],
+        "surname" => &["sjj", "sww", "s-qsqw"],
+        "address" => &["qqq", "q-wsww", "s-qsqw"],
+        "cp" => &[32354, 2315, 5487],
+    ).unwrap();
+    let df1: DataFrame = df.select(["name"])?;
+    println!("select column {:?}", df1);
+
+    let mask = df.column("name").unwrap().is_not_null();
+    let filtering: DataFrame = df.filter(&mask)?;
+    println!("filtering column {:?}", filtering);
+
+    let df3 = df
+        .clone()
+        .lazy()
+        .select([col("cp").filter(col("address").eq(lit("qqq")))])
+        .collect()
+        .unwrap();
+    println!("df3 - cp - filtered by String: {}", df3);
+
+    let df3 = df
+        .clone()
+        .lazy()
+        .select(
+            [col("cp").filter(col("address").eq(lit("qqq"))),
+                col("address")]
+            )
+        .collect()
+        .unwrap();
+    println!("df3 - cp & address filtered by String: {}", df3);
+
+    Ok(df)
+}
+
 fn main() {
     read_csv_files().ok();
     read_csv().ok();
@@ -209,17 +266,17 @@ fn main() {
     create_new_output_csv_with_header().ok();
     read_from_output_csv_to_df().ok();
     delete_duplicated_rows_by_column().ok();
+    create_df().ok();
+    add_column().ok();
+    select_column().ok();
+
 }
 
 /*
 output
 
 Files name .csv => ["./data/students1.csv", "./data/students2.csv"]
-reader => Reader { core: Reader { dfa: Dfa(N/A), dfa_state: DfaState(0), nfa_state: StartRecord, delimiter: 44, 
-    term: CRLF, quote: 34, escape: None, double_quote: true, comment: None, quoting: true, use_nfa: false, 
-    line: 1, has_read: false, output_pos: 0 }, rdr: BufReader { reader: File { fd: 3, path: "/data/students1.csv", read: true, write: false },
-     buffer: 0/8192 }, state: ReaderState { headers: None, has_headers: true, flexible: false, trim: None, first_field_count: None, 
-        cur_pos: Position { byte: 0, line: 1, record: 0 }, first: false, seeked: false, eof: NotEof } }
+reader => Reader { core: Reader { dfa: Dfa(N/A), dfa_state: DfaState(0), nfa_state: StartRecord, delimiter: 44, term: CRLF, quote: 34, escape: None, double_quote: true, comment: None, quoting: true, use_nfa: false, line: 1, has_read: false, output_pos: 0 }, rdr: BufReader { reader: File { fd: 3, path: "/home/javier/Escritorio/Proyectos/rust/rust_csv_dataframe/data/students1.csv", read: true, write: false }, buffer: 0/8192 }, state: ReaderState { headers: None, has_headers: true, flexible: false, trim: None, first_field_count: None, cur_pos: Position { byte: 0, line: 1, record: 0 }, first: false, seeked: false, eof: NotEof } }
 record => StringRecord(["41714", "12.4"])
 Value at index 0 in the StringRecord: 41714
 Value at index 1 in the StringRecord: 12.4
@@ -244,12 +301,7 @@ Value at index 1 in the StringRecord: 143
 record => StringRecord(["41764", "133"])
 Value at index 0 in the StringRecord: 41764
 Value at index 1 in the StringRecord: 133
-reader => Reader { core: Reader { dfa: Dfa(N/A), dfa_state: DfaState(0), nfa_state: StartRecord, delimiter: 44,
-     term: CRLF, quote: 34, escape: None, double_quote: true, comment: None, quoting: true, use_nfa: false, line: 1, 
-     has_read: false, output_pos: 0 }, rdr: BufReader { reader: File { fd: 3, path: "/data/students2.csv", 
-     read: true, write: false }, buffer: 0/8192 }, state: ReaderState { headers: None, has_headers: true, 
-        flexible: false, trim: None, first_field_count: None, cur_pos: Position { byte: 0, line: 1, record: 0 }, 
-        first: false, seeked: false, eof: NotEof } }
+reader => Reader { core: Reader { dfa: Dfa(N/A), dfa_state: DfaState(0), nfa_state: StartRecord, delimiter: 44, term: CRLF, quote: 34, escape: None, double_quote: true, comment: None, quoting: true, use_nfa: false, line: 1, has_read: false, output_pos: 0 }, rdr: BufReader { reader: File { fd: 3, path: "/home/javier/Escritorio/Proyectos/rust/rust_csv_dataframe/data/students2.csv", read: true, write: false }, buffer: 0/8192 }, state: ReaderState { headers: None, has_headers: true, flexible: false, trim: None, first_field_count: None, cur_pos: Position { byte: 0, line: 1, record: 0 }, first: false, seeked: false, eof: NotEof } }
 record => StringRecord(["1714", "2.4"])
 Value at index 0 in the StringRecord: 1714
 Value at index 1 in the StringRecord: 2.4
@@ -337,7 +389,7 @@ Processing file ... "./data/students2.csv"
 Created a new file ./output2.csv
 ---------------------------------------------
 reading from file output2.csv
-shape: (67, 2)
+shape: (271, 2)
 ┌───────┬───────────────┐
 │ SCORE ┆ POINT_AVERAGE │
 │ ---   ┆ ---           │
@@ -355,7 +407,7 @@ shape: (67, 2)
 └───────┴───────────────┘
 ---------------------------------------------
 reading from a csv file and getting duplicated rows
-there are duplicated rowsshape: (67,)
+there are duplicated rowsshape: (271,)
 ChunkedArray: '' [bool]
 [
         true
@@ -391,14 +443,79 @@ dataframe without duplicated values of a column Ok(shape: (15, 2)
 │ ---   ┆ ---           │
 │ str   ┆ str           │
 ╞═══════╪═══════════════╡
-│ 1760  ┆  2.54         │
-│ 1664  ┆  2.52         │
-│ 1685  ┆  2.74         │
-│ 41764 ┆  143          │
-│ …     ┆ …             │
 │ 1764  ┆  3            │
-│ 41670 ┆  12.91        │
+│ 1714  ┆  2.4          │
+│ 41760 ┆  12.54        │
 │ 1670  ┆  2.91         │
-│ 1693  ┆  2.83         │
+│ …     ┆ …             │
+│ 41685 ┆  12.74        │
+│ SCORE ┆ POINT_AVERAGE │
+│ 41664 ┆  12.52        │
+│ 1760  ┆  2.54         │
 └───────┴───────────────┘)
+create df shape: (2, 2)
+┌──────┬─────────┐
+│ name ┆ surname │
+│ ---  ┆ ---     │
+│ str  ┆ str     │
+╞══════╪═════════╡
+│ jj   ┆ sjj     │
+│ ww   ┆ sww     │
+└──────┴─────────┘
+add column shape: (2, 2)
+┌──────┬─────────┐
+│ name ┆ surname │
+│ ---  ┆ ---     │
+│ str  ┆ str     │
+╞══════╪═════════╡
+│ jj   ┆ sjj     │
+│ ww   ┆ sww     │
+└──────┴─────────┘
+add column shape: (2, 3)
+┌─────────┬──────┬─────────┐
+│ address ┆ name ┆ surname │
+│ ---     ┆ ---  ┆ ---     │
+│ u32     ┆ str  ┆ str     │
+╞═════════╪══════╪═════════╡
+│ 10      ┆ jj   ┆ sjj     │
+│ 11      ┆ ww   ┆ sww     │
+└─────────┴──────┴─────────┘
+select column shape: (3, 1)
+┌──────┐
+│ name │
+│ ---  │
+│ str  │
+╞══════╡
+│ rew  │
+│ ww   │
+│ qsqw │
+└──────┘
+filtering column shape: (3, 4)
+┌──────┬─────────┬─────────┬───────┐
+│ name ┆ surname ┆ address ┆ cp    │
+│ ---  ┆ ---     ┆ ---     ┆ ---   │
+│ str  ┆ str     ┆ str     ┆ i32   │
+╞══════╪═════════╪═════════╪═══════╡
+│ rew  ┆ sjj     ┆ qqq     ┆ 32354 │
+│ ww   ┆ sww     ┆ q-wsww  ┆ 2315  │
+│ qsqw ┆ s-qsqw  ┆ s-qsqw  ┆ 5487  │
+└──────┴─────────┴─────────┴───────┘
+df3 - CP - filtered by String: shape: (1, 1)
+┌───────┐
+│ cp    │
+│ ---   │
+│ i32   │
+╞═══════╡
+│ 32354 │
+└───────┘
+df3: shape: (3, 2)
+┌───────┬─────────┐
+│ cp    ┆ address │
+│ ---   ┆ ---     │
+│ i32   ┆ str     │
+╞═══════╪═════════╡
+│ 32354 ┆ qqq     │
+│ 32354 ┆ q-wsww  │
+│ 32354 ┆ s-qsqw  │
+└───────┴─────────┘
  */
